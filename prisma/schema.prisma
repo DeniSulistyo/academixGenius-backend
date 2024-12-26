@@ -12,3 +12,118 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id            Int            @id @default(autoincrement())
+  email         String         @unique
+  name          String
+  password      String
+  role          Role           @default(STUDENT)
+  bio           String
+  imageUrl      String
+  notifications Notification[]
+  courses       Course[]
+  Forum         Forum[]
+}
+
+model Course {
+  id          Int        @id @default(autoincrement())
+  name        String
+  description String
+  imageUrl    String
+  userId      Int
+  progreses   Progres[]
+  schedules   Schedule[]
+  materials   Material[]
+  presences   Presence[]
+  classes     Class[]
+  user        User       @relation(fields: [userId], references: [id])
+}
+
+model Forum {
+  id            Int    @id @default(autoincrement())
+  userId        Int
+  message       String
+  reply_message String
+  file          String
+  description   String
+  members       String
+  user          User   @relation(fields: [userId], references: [id])
+}
+
+model Schedule {
+  id         Int      @id @default(autoincrement())
+  start_date DateTime
+  end_date   DateTime
+  courses    Course[]
+}
+
+model Material {
+  id             Int           @id @default(autoincrement())
+  name           String
+  description    String
+  assignments    Assignment[]
+  grades         Grade[]
+  Course         Course?       @relation(fields: [courseId], references: [id])
+  courseId       Int?
+  Notification   Notification? @relation(fields: [notificationId], references: [id])
+  notificationId Int?
+}
+
+model Assignment {
+  id         Int       @id @default(autoincrement())
+  name       String
+  fileUrl    String
+  start_date DateTime
+  end_date   DateTime
+  Material   Material? @relation(fields: [materialId], references: [id])
+  materialId Int?
+}
+
+model Progres {
+  id         Int        @id @default(autoincrement())
+  precentage String
+  presences  Presence[]
+  Course     Course?    @relation(fields: [courseId], references: [id])
+  courseId   Int?
+  Class      Class?     @relation(fields: [classId], references: [id])
+  classId    Int?
+}
+
+model Grade {
+  id        Int        @id @default(autoincrement())
+  materials Material[]
+  status    String
+  feedback  String
+}
+
+model Notification {
+  id        Int        @id @default(autoincrement())
+  userId    Int
+  materials Material[]
+  user      User       @relation(fields: [userId], references: [id])
+}
+
+model Presence {
+  id        Int      @id @default(autoincrement())
+  status    String
+  date      DateTime
+  Course    Course?  @relation(fields: [courseId], references: [id])
+  courseId  Int?
+  Progres   Progres? @relation(fields: [progresId], references: [id])
+  progresId Int?
+}
+
+model Class {
+  id        Int       @id @default(autoincrement())
+  name      String
+  progreses Progres[]
+  Course    Course?   @relation(fields: [courseId], references: [id])
+  courseId  Int?
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  STUDENT
+}
