@@ -24,13 +24,14 @@ model User {
   notifications Notification[]
   courses       Course[]
   Forum         Forum[]
+  Material      Material[]
 }
 
 model Course {
   id          Int        @id @default(autoincrement())
   name        String
   description String
-  imageUrl    String
+  imageUrl    String?    @default("https://i0.wp.com/game.courses/wp-content/uploads/2020/08/placeholder.png?quality=80&ssl=1")
   userId      Int
   progreses   Progres[]
   schedules   Schedule[]
@@ -53,9 +54,10 @@ model Forum {
 
 model Schedule {
   id         Int      @id @default(autoincrement())
-  start_date DateTime
-  end_date   DateTime
-  courses    Course[]
+  start_time DateTime
+  end_time   DateTime
+  courseId   Int
+  Course     Course   @relation(fields: [courseId], references: [id])
 }
 
 model Material {
@@ -64,6 +66,8 @@ model Material {
   description    String
   assignments    Assignment[]
   grades         Grade[]
+  userId         Int
+  user           User          @relation(fields: [userId], references: [id])
   Course         Course?       @relation(fields: [courseId], references: [id])
   courseId       Int?
   Notification   Notification? @relation(fields: [notificationId], references: [id])
