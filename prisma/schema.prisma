@@ -26,6 +26,7 @@ model User {
   courses       Course[]
   Forum         Forum[]
   Material      Material[]
+  Presence      Presence[]
 }
 
 model Course {
@@ -68,6 +69,7 @@ model Material {
   assignments    Assignment[]
   grades         Grade[]
   userId         Int
+  fileUrl        String?
   user           User          @relation(fields: [userId], references: [id])
   Course         Course?       @relation(fields: [courseId], references: [id])
   courseId       Int?
@@ -111,12 +113,23 @@ model Notification {
 
 model Presence {
   id        Int      @id @default(autoincrement())
-  status    String
-  date      DateTime
+  status    Status
+  date      DateTime @default(now())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
   Course    Course?  @relation(fields: [courseId], references: [id])
   courseId  Int?
   Progres   Progres? @relation(fields: [progresId], references: [id])
   progresId Int?
+
+  @@unique([userId, date, courseId])
+}
+
+enum Status {
+  PRESENT
+  PERMISSION
+  LATE
+  ABSENT
 }
 
 model Class {

@@ -31,6 +31,7 @@ const getStudents = async (req, res) => {
 const createStudent = async (req, res) => {
   try {
     const { name, email, password, bio } = req.body;
+    const imageUrl = req.file ? req.file.path : null;
 
     if (!name || !email || !password) {
       return res
@@ -57,6 +58,7 @@ const createStudent = async (req, res) => {
         password: hashedPassword,
         role: "STUDENT",
         bio: bio,
+        imageUrl: imageUrl,
       },
     });
 
@@ -67,6 +69,7 @@ const createStudent = async (req, res) => {
         name: newStudent.name,
         email: newStudent.email,
         bio: bio,
+        imageUrl: imageUrl,
       },
     });
   } catch (error) {

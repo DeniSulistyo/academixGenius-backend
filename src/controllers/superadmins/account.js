@@ -41,6 +41,7 @@ const login = async (req, res) => {
         bio: user.bio,
         imageUrl: user.imageUrl,
         token: token,
+        teach: user.teach,
       },
     });
   } catch (error) {

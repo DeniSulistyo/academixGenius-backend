@@ -31,7 +31,8 @@ const getAdmins = async (req, res) => {
 };
 const createAdmin = async (req, res) => {
   try {
-    const { name, email, password, bio } = req.body;
+    const { name, email, password, bio, teach } = req.body;
+    const imageUrl = req.file ? req.file.path : null;
     if (!name || !email || !password) {
       return res.status(400).json({
         message: "Name, email, and password are required",
@@ -57,6 +58,8 @@ const createAdmin = async (req, res) => {
         password: hashedPassword,
         role: "ADMIN",
         bio: bio,
+        imageUrl: imageUrl,
+        teach,
       },
     });
 
@@ -68,6 +71,8 @@ const createAdmin = async (req, res) => {
         name: admin.name,
         role: admin.role,
         bio: admin.bio,
+        imageUrl: admin.imageUrl,
+        teach: admin.teach,
       },
     });
   } catch (error) {
@@ -100,7 +105,10 @@ const getAdminById = async (req, res) => {
 const updateAdmin = async (req, res) => {
   try {
     const { adminId } = req.params;
-    const { name, email, password, bio } = req.body;
+    const { name, email, password, bio, teach } = req.body;
+    const imageUrl = req.file
+      ? req.file.path
+      : "https://static.vecteezy.com/system/resources/previews/009/292/244/non_2x/default-avatar-icon-of-social-media-user-vector.jpg";
     const admin = await prisma.user.findUnique({
       where: { id: parseInt(adminId) },
     });
@@ -114,9 +122,22 @@ const updateAdmin = async (req, res) => {
         email,
         password,
         bio,
+        imageUrl,
+        teach,
       },
     });
-    return res.status(200).json({ message: "Admin updated successfully" });
+    return res.status(200).json({
+      message: "Admin updated successfully",
+      data: {
+        id: admin.id,
+        email: admin.email,
+        name: admin.name,
+        role: admin.role,
+        bio: admin.bio,
+        imageUrl: admin.imageUrl,
+        teach: admin.teach,
+      },
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Error updating admin" });

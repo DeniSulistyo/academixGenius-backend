@@ -4,7 +4,7 @@ const port = process.env.PORT || 3000;
 const cors = require("cors");
 require("dotenv").config();
 
-const localIP = "192.168.18.6";
+const localIP = "192.168.18.151";
 
 app.use(cors());
 app.use(express.json());

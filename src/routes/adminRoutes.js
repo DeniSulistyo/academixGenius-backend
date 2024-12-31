@@ -1,5 +1,4 @@
 const express = require("express");
-const { login } = require("../controllers/superadmins/account");
 const authMiddleware = require("../middlewares/authMiddleware");
 const roleMiddleware = require("../middlewares/roleMiddleware");
 const {
@@ -8,18 +7,23 @@ const {
   getStudentByID,
   deleteStudent,
 } = require("../controllers/admins/student");
-const {
-  createMaterial,
-  getMaterials,
-} = require("../controllers/admins/material");
+const { createMaterial } = require("../controllers/admins/material");
 const upload = require("../utils/multer");
 const {
   createCourse,
   deleteCourse,
-  getCourses,
-  getCourseById,
   updateCourse,
 } = require("../controllers/admins/course");
+const {
+  getCourses,
+  getCourseById,
+  getMaterials,
+  login,
+} = require("../controllers/commonController");
+const {
+  getAttendances,
+  markAttendance,
+} = require("../controllers/admins/attendance");
 
 const router = express.Router();
 
@@ -36,6 +40,7 @@ router.post(
   "/create-student",
   authMiddleware,
   roleMiddleware("ADMIN"),
+  upload.single("image"),
   createStudent
 );
 
@@ -58,6 +63,10 @@ router.post(
   "/create-material",
   authMiddleware,
   roleMiddleware("ADMIN"),
+  upload.fields([
+    { name: "materialFile", maxCount: 1 },
+    { name: "assignmentFile", maxCount: 1 },
+  ]),
   createMaterial
 );
 
@@ -84,4 +93,15 @@ router.delete(
 );
 
 router.get("/materials", authMiddleware, roleMiddleware("ADMIN"), getMaterials);
+
+// attendance
+router.get(
+  "/attendances",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  getAttendances
+);
+
+router.post("/attendance", authMiddleware, roleMiddleware("ADMIN"));
+
 module.exports = router;

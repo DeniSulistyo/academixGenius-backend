@@ -1,6 +1,5 @@
 const express = require("express");
 const authMiddleware = require("../middlewares/authMiddleware");
-const { login } = require("../controllers/superadmins/account");
 const roleMiddleware = require("../middlewares/roleMiddleware");
 const {
   createAdmin,
@@ -9,6 +8,8 @@ const {
   getAdminById,
   updateAdmin,
 } = require("../controllers/superadmins/admin");
+const upload = require("../utils/multer");
+const { login } = require("../controllers/commonController");
 
 const router = express.Router();
 
@@ -19,6 +20,7 @@ router.post(
   "/admin",
   authMiddleware,
   roleMiddleware("SUPER_ADMIN"),
+  upload.single("image"),
   createAdmin
 );
 
@@ -33,6 +35,7 @@ router.put(
   "/admin/:adminId",
   authMiddleware,
   roleMiddleware("SUPER_ADMIN"),
+  upload.single("image"),
   updateAdmin
 );
 
