@@ -6,8 +6,14 @@ const {
   getStudents,
   getStudentByID,
   deleteStudent,
+  updateStudent,
 } = require("../controllers/admins/student");
-const { createMaterial } = require("../controllers/admins/material");
+const {
+  createMaterial,
+  updateMaterial,
+  getMaterialById,
+  deleteMaterial,
+} = require("../controllers/admins/material");
 const upload = require("../utils/multer");
 const {
   createCourse,
@@ -19,11 +25,14 @@ const {
   getCourseById,
   getMaterials,
   login,
+  getForums,
+  createMessage,
+  getMessage,
+  deleteMessage,
 } = require("../controllers/commonController");
-const {
-  getAttendances,
-  markAttendance,
-} = require("../controllers/admins/attendance");
+const { getAttendances } = require("../controllers/admins/attendance");
+const { createForum } = require("../controllers/admins/forum");
+const { createAssignment } = require("../controllers/admins/assignment");
 
 const router = express.Router();
 
@@ -37,11 +46,19 @@ router.get(
 );
 
 router.post(
-  "/create-student",
+  "/student",
   authMiddleware,
   roleMiddleware("ADMIN"),
   upload.single("image"),
   createStudent
+);
+
+router.put(
+  "/student/:studentId",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  upload.single("image"),
+  updateStudent
 );
 
 router.delete(
@@ -60,14 +77,35 @@ router.post(
   createCourse
 );
 router.post(
-  "/create-material",
+  "/material",
   authMiddleware,
   roleMiddleware("ADMIN"),
-  upload.fields([
-    { name: "materialFile", maxCount: 1 },
-    { name: "assignmentFile", maxCount: 1 },
-  ]),
+  upload.single("file"),
   createMaterial
+);
+
+router.get("/materials", authMiddleware, roleMiddleware("ADMIN"), getMaterials);
+
+router.get(
+  "/material/:materialId",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  getMaterialById
+);
+
+router.put(
+  "/material/:materialId",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  upload.single("file"),
+  updateMaterial
+);
+
+router.delete(
+  "/material/:materialId",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  deleteMaterial
 );
 
 router.get(
@@ -92,7 +130,14 @@ router.delete(
   deleteCourse
 );
 
-router.get("/materials", authMiddleware, roleMiddleware("ADMIN"), getMaterials);
+// assigments
+router.post(
+  "/assignment",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  upload.single("file"),
+  createAssignment
+);
 
 // attendance
 router.get(
@@ -102,6 +147,31 @@ router.get(
   getAttendances
 );
 
-router.post("/attendance", authMiddleware, roleMiddleware("ADMIN"));
+// forums
+router.get("/forums", authMiddleware, roleMiddleware("ADMIN"), getForums);
+
+router.post("/forum", authMiddleware, roleMiddleware("ADMIN"), createForum);
+
+router.post(
+  "/message",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  upload.single("file"),
+  createMessage
+);
+
+router.get(
+  "/message/:forumId",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  getMessage
+);
+
+router.delete(
+  "/message/:messageId",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  deleteMessage
+);
 
 module.exports = router;

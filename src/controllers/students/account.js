@@ -4,22 +4,24 @@ const { generateToken } = require("../../utils/jwtUtils");
 
 const login = async (req, res) => {
   try {
-    console.log("Body di controller:", req.body);
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({
-        message: "Email and password are required",
-      });
-    }
-
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: {
+        email,
+      },
     });
 
     if (!user) {
       return res.status(404).json({
         message: "User not found",
+      });
+    }
+
+    // Check if the user has the role 'STUDENT'
+    if (user.role !== "STUDENT") {
+      return res.status(403).json({
+        message: "Only students can log in",
       });
     }
 
@@ -40,18 +42,19 @@ const login = async (req, res) => {
       message: "Login successful",
       data: {
         id: user.id,
-        email: user.email,
         name: user.name,
+        email: user.email,
         role: user.role,
         bio: user.bio,
         imageUrl: user.imageUrl,
-        token,
+        token: token,
+        teach: user.teach,
       },
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
-      message: "Error logging in",
+      message: "Internal server error",
       error: error.message,
     });
   }

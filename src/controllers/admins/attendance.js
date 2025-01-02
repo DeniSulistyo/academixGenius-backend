@@ -31,15 +31,4 @@ const getAttendances = async (req, res) => {
   }
 };
 
-const createAttendance = async (req, res) => {
-  try {
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      message: "Error creating attendance",
-      error: error.message,
-    });
-  }
-};
-
 module.exports = { getAttendances };

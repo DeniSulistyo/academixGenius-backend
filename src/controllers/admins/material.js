@@ -1,9 +1,13 @@
 const prisma = require("../../db/prisma");
 const upload = require("../../utils/multer");
+const cloudinary = require("../../utils/cloudinary");
+const removeCloudinary = require("../../utils/removeCloudinary");
 
 const createMaterial = async (req, res) => {
   try {
-    const { name, description, courseId, start_date, end_date } = req.body;
+    const { name, description, courseId, date, start_time, end_time } =
+      req.body;
+    const fileUrl = req.file ? req.file.path : null;
 
     // Pastikan user sudah terautentikasi
     const userId = req.user.id;
@@ -12,39 +16,17 @@ const createMaterial = async (req, res) => {
     }
 
     // Validasi input
-    if (!name || !description || !courseId) {
+    if (
+      !name ||
+      !description ||
+      !courseId ||
+      !date ||
+      !start_time ||
+      !end_time
+    ) {
       return res.status(400).json({
-        message: "Name, description, and courseId are required",
-      });
-    }
-
-    // Variabel untuk URL file
-    let fileUrl = null;
-    let assignmentFileUrl = null;
-    const assignments = [];
-
-    // Memastikan file materi ada (misalnya file PDF materi)
-    if (req.files && req.files.materialFile) {
-      fileUrl = req.files.materialFile[0].path; // URL file materi
-    }
-
-    // Jika ada file untuk assignment
-    if (req.files && req.files.assignmentFile) {
-      assignmentFileUrl = req.files.assignmentFile[0].path; // URL file assignment
-
-      if (!start_date || !end_date) {
-        return res.status(400).json({
-          message:
-            "Start date and end date are required when uploading an assignment",
-        });
-      }
-
-      // Tambahkan tugas ke array assignments
-      assignments.push({
-        name: "Assignment for " + name,
-        fileUrl: assignmentFileUrl,
-        start_date: new Date(start_date), // Pastikan start_date dalam format Date
-        end_date: new Date(end_date), // Pastikan end_date dalam format Date
+        message:
+          "Name, description, courseId, date, start_time, and end_time are required",
       });
     }
 
@@ -55,12 +37,10 @@ const createMaterial = async (req, res) => {
         description,
         userId,
         courseId: parseInt(courseId),
-        fileUrl, // Menyimpan file materi
-        assignments:
-          assignments.length > 0 ? { create: assignments } : undefined, // Hanya buat assignment jika ada
-      },
-      include: {
-        assignments: true, // Sertakan assignments dalam respons
+        fileUrl,
+        date: new Date(date),
+        start_time,
+        end_time,
       },
     });
 
@@ -72,8 +52,11 @@ const createMaterial = async (req, res) => {
         description: material.description,
         userId: material.userId,
         courseId: material.courseId,
-        fileUrl: material.fileUrl, // Sertakan fileUrl dalam response
-        assignments: material.assignments, // Sertakan assignments dalam response
+        fileUrl: material.fileUrl,
+        date: material.date,
+        start_time: material.start_time,
+        end_time: material.end_time,
+        assignments: material.assignments,
       },
     });
   } catch (error) {
@@ -82,4 +65,144 @@ const createMaterial = async (req, res) => {
   }
 };
 
-module.exports = { createMaterial };
+const updateMaterial = async (req, res) => {
+  try {
+    const { materialId } = req.params;
+    const { name, description, courseId, date, start_time, end_time } =
+      req.body;
+    const fileUrl = req.file ? req.file.path : null;
+
+    const userId = req.user.id;
+    if (!userId) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    if (
+      !name ||
+      !description ||
+      !courseId ||
+      !date ||
+      !start_time ||
+      !end_time
+    ) {
+      return res.status(400).json({
+        message:
+          "Name, description, courseId, date, start_time, and end_time are required",
+      });
+    }
+
+    const oldMaterial = await prisma.material.findUnique({
+      where: {
+        id: parseInt(materialId),
+      },
+    });
+
+    if (oldMaterial.fileUrl) {
+      const isDeleted = await removeCloudinary(oldMaterial.fileUrl);
+      if (!isDeleted) {
+        return res
+          .status(500)
+          .json({ message: "Error deleting old image from Cloudinary" });
+      }
+    }
+
+    const updatedMaterial = await prisma.material.update({
+      where: {
+        id: parseInt(materialId),
+      },
+      data: {
+        name,
+        description,
+        userId,
+        courseId: parseInt(courseId),
+        fileUrl,
+        date: new Date(date),
+        start_time,
+        end_time,
+      },
+    });
+
+    res.status(200).json({
+      message: "Material updated successfully",
+      data: {
+        id: updatedMaterial.id,
+        name: updatedMaterial.name,
+        description: updatedMaterial.description,
+        userId: updatedMaterial.userId,
+        courseId: updatedMaterial.courseId,
+        fileUrl: updatedMaterial.fileUrl,
+        date: updatedMaterial.date,
+        start_time: updatedMaterial.start_time,
+        end_time: updatedMaterial.end_time,
+        assignments: updatedMaterial.assignments,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error updating material" });
+  }
+};
+
+const getMaterialById = async (req, res) => {
+  try {
+    const { materialId } = req.params;
+    const material = await prisma.material.findUnique({
+      where: {
+        id: parseInt(materialId),
+      },
+      include: {
+        assignments: true,
+      },
+    });
+
+    return res
+      .status(200)
+      .json({ message: "Material fetched successfully", data: material });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error fetching material" });
+  }
+};
+
+const deleteMaterial = async (req, res) => {
+  try {
+    const { materialId } = req.params;
+    const material = await prisma.material.findUnique({
+      where: {
+        id: parseInt(materialId),
+      },
+    });
+
+    if (!material) {
+      return res.status(404).json({ message: "Material not found" });
+    }
+
+    if (material.fileUrl) {
+      const isDeleted = await removeCloudinary(material.fileUrl);
+      if (!isDeleted) {
+        return res
+          .status(500)
+          .json({ message: "Error deleting file from Cloudinary" });
+      }
+    }
+    await prisma.material.delete({
+      where: {
+        id: parseInt(materialId),
+      },
+    });
+
+    return res
+      .status(200)
+      .json({ message: "Material deleted successfully", data: material });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error deleting material" });
+  }
+};
+
+module.exports = {
+  createMaterial,
+  updateMaterial,
+  getMaterialById,
+  deleteMaterial,
+};
