@@ -29,7 +29,6 @@ model User {
   Presence      Presence[]
   messages      Message[]
   forums        Forum[]        @relation("ForumMembers")
-  progreses     Progres[]
 }
 
 model Course {
@@ -38,11 +37,10 @@ model Course {
   description String
   imageUrl    String?    @default("https://i0.wp.com/game.courses/wp-content/uploads/2020/08/placeholder.png?quality=80&ssl=1")
   userId      Int
-  progreses   Progres[]
   schedules   Schedule[]
   materials   Material[]
   presences   Presence[]
-  classes     Class[]
+  members     Member[]
   user        User       @relation(fields: [userId], references: [id])
 }
 
@@ -95,7 +93,6 @@ model Material {
   courseId       Int?
   Notification   Notification? @relation(fields: [notificationId], references: [id])
   notificationId Int?
-  progreses      Progres[]
 }
 
 model Assignment {
@@ -107,22 +104,6 @@ model Assignment {
   end_date    DateTime
   Material    Material? @relation(fields: [materialId], references: [id])
   materialId  Int?
-}
-
-model Progres {
-  id         Int        @id @default(autoincrement())
-  done       Boolean    @default(false)
-  userId     Int
-  user       User       @relation(fields: [userId], references: [id])
-  Course     Course?    @relation(fields: [courseId], references: [id])
-  courseId   Int?
-  materialId Int
-  Material   Material?  @relation(fields: [materialId], references: [id])
-  Presence   Presence[]
-  Class      Class?     @relation(fields: [classId], references: [id])
-  classId    Int?
-
-  @@unique([userId, materialId])
 }
 
 model Grade {
@@ -140,17 +121,21 @@ model Notification {
 }
 
 model Presence {
-  id        Int      @id @default(autoincrement())
-  status    Status
-  date      DateTime @default(now())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  Course    Course?  @relation(fields: [courseId], references: [id])
-  courseId  Int?
-  Progres   Progres? @relation(fields: [progresId], references: [id])
-  progresId Int?
-
+  id       Int      @id @default(autoincrement())
+  status   Status
+  date     DateTime @default(now())
+  userId   Int
+  user     User     @relation(fields: [userId], references: [id])
+  Course   Course?  @relation(fields: [courseId], references: [id])
+  courseId Int?
   @@unique([userId, date, courseId])
+}
+
+model Member {
+  id       Int    @id @default(autoincrement())
+  name     String
+  courseId Int
+  Course   Course @relation(fields: [courseId], references: [id])
 }
 
 enum Status {
@@ -158,14 +143,6 @@ enum Status {
   PERMISSION
   LATE
   ABSENT
-}
-
-model Class {
-  id        Int       @id @default(autoincrement())
-  name      String
-  progreses Progres[]
-  Course    Course?   @relation(fields: [courseId], references: [id])
-  courseId  Int?
 }
 
 enum Role {
