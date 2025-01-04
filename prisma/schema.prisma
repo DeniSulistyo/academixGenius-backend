@@ -103,6 +103,7 @@ model Assignment {
   fileUrl     String
   start_date  DateTime
   end_date    DateTime
+  grade       Int
   Material    Material? @relation(fields: [materialId], references: [id])
   materialId  Int?
 }
