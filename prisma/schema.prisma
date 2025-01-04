@@ -18,10 +18,11 @@ model User {
   email         String         @unique
   name          String
   password      String
-  role          Role           @default(STUDENT)
-  bio           String?
+  role          Role
   imageUrl      String         @default("https://static.vecteezy.com/system/resources/previews/009/292/244/non_2x/default-avatar-icon-of-social-media-user-vector.jpg")
-  teach         String?
+  createdBy     Int?
+  creator       User?          @relation("CreatedStudents", fields: [createdBy], references: [id])
+  students      User[]         @relation("CreatedStudents")
   notifications Notification[]
   courses       Course[]
   Forum         Forum[]
@@ -29,6 +30,7 @@ model User {
   Presence      Presence[]
   messages      Message[]
   forums        Forum[]        @relation("ForumMembers")
+  Member        Member[]
 }
 
 model Course {
@@ -37,6 +39,8 @@ model Course {
   description String
   imageUrl    String?    @default("https://i0.wp.com/game.courses/wp-content/uploads/2020/08/placeholder.png?quality=80&ssl=1")
   userId      Int
+  start_time  String     @default("00:00")
+  end_time    String     @default("23:59")
   schedules   Schedule[]
   materials   Material[]
   presences   Presence[]
@@ -84,9 +88,6 @@ model Material {
   grades         Grade[]
   userId         Int
   fileUrl        String?
-  date           DateTime      @default(now())
-  start_time     String        @default("00:00")
-  end_time       String        @default("23:59")
   done           Boolean       @default(false)
   user           User          @relation(fields: [userId], references: [id])
   Course         Course?       @relation(fields: [courseId], references: [id])
@@ -128,6 +129,7 @@ model Presence {
   user     User     @relation(fields: [userId], references: [id])
   Course   Course?  @relation(fields: [courseId], references: [id])
   courseId Int?
+
   @@unique([userId, date, courseId])
 }
 
@@ -135,7 +137,11 @@ model Member {
   id       Int    @id @default(autoincrement())
   name     String
   courseId Int
+  userId   Int
+  user     User   @relation(fields: [userId], references: [id])
   Course   Course @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
 }
 
 enum Status {
@@ -146,7 +152,6 @@ enum Status {
 }
 
 enum Role {
-  SUPER_ADMIN
   ADMIN
   STUDENT
 }

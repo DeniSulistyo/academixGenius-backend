@@ -1,208 +1,114 @@
 const prisma = require("../../db/prisma");
-const upload = require("../../utils/multer");
-const cloudinary = require("../../utils/cloudinary");
-const removeCloudinary = require("../../utils/removeCloudinary");
+
+const getMaterials = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    if (!courseId) {
+      return res.status(400).json({ message: "Course ID is required" });
+    }
+
+    const materials = await prisma.material.findMany({
+      where: {
+        courseId: parseInt(courseId),
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            imageUrl: true,
+          },
+        },
+        assignments: true,
+        grades: true,
+      },
+    });
+
+    if (materials.length === 0) {
+      return res.status(404).json({ message: "Materials not found" });
+    }
+
+    return res
+      .status(200)
+      .json({ message: "Material fetched successfully", data: materials });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error getting materials" });
+  }
+};
 
 const createMaterial = async (req, res) => {
   try {
-    const { name, description, courseId, date, start_time, end_time } =
-      req.body;
+    const { name, description } = req.body;
     const fileUrl = req.file ? req.file.path : null;
+    const adminId = req.user.id;
+    const { courseId } = req.params;
 
-    // Pastikan user sudah terautentikasi
-    const userId = req.user.id;
-    if (!userId) {
-      return res.status(401).json({ message: "User not authenticated" });
+    if (!name || !description) {
+      return res
+        .status(400)
+        .json({ message: "Name and description are required" });
     }
 
-    // Validasi input
-    if (
-      !name ||
-      !description ||
-      !courseId ||
-      !date ||
-      !start_time ||
-      !end_time
-    ) {
+    const course = await prisma.course.findUnique({
+      where: { id: parseInt(courseId) },
+      select: { id: true, name: true, description: true },
+    });
+
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    const existingMaterial = await prisma.material.findFirst({
+      where: {
+        name: name,
+        courseId: parseInt(courseId),
+      },
+    });
+
+    if (existingMaterial) {
       return res.status(400).json({
-        message:
-          "Name, description, courseId, date, start_time, and end_time are required",
+        message: "Material with the same name already exists in this course",
       });
     }
 
-    // Membuat material baru di database
-    const material = await prisma.material.create({
+    const newMaterial = await prisma.material.create({
       data: {
         name,
         description,
-        userId,
-        courseId: parseInt(courseId),
         fileUrl,
-        date: new Date(date),
-        start_time,
-        end_time,
-      },
-    });
-
-    res.status(201).json({
-      message: "Material created successfully",
-      data: {
-        id: material.id,
-        name: material.name,
-        description: material.description,
-        userId: material.userId,
-        courseId: material.courseId,
-        fileUrl: material.fileUrl,
-        date: material.date,
-        start_time: material.start_time,
-        end_time: material.end_time,
-        assignments: material.assignments,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error creating material" });
-  }
-};
-
-const updateMaterial = async (req, res) => {
-  try {
-    const { materialId } = req.params;
-    const { name, description, courseId, date, start_time, end_time } =
-      req.body;
-    const fileUrl = req.file ? req.file.path : null;
-
-    const userId = req.user.id;
-    if (!userId) {
-      return res.status(401).json({ message: "User not authenticated" });
-    }
-
-    if (
-      !name ||
-      !description ||
-      !courseId ||
-      !date ||
-      !start_time ||
-      !end_time
-    ) {
-      return res.status(400).json({
-        message:
-          "Name, description, courseId, date, start_time, and end_time are required",
-      });
-    }
-
-    const oldMaterial = await prisma.material.findUnique({
-      where: {
-        id: parseInt(materialId),
-      },
-    });
-
-    if (oldMaterial.fileUrl) {
-      const isDeleted = await removeCloudinary(oldMaterial.fileUrl);
-      if (!isDeleted) {
-        return res
-          .status(500)
-          .json({ message: "Error deleting old image from Cloudinary" });
-      }
-    }
-
-    const updatedMaterial = await prisma.material.update({
-      where: {
-        id: parseInt(materialId),
-      },
-      data: {
-        name,
-        description,
-        userId,
         courseId: parseInt(courseId),
-        fileUrl,
-        date: new Date(date),
-        start_time,
-        end_time,
-      },
-    });
-
-    res.status(200).json({
-      message: "Material updated successfully",
-      data: {
-        id: updatedMaterial.id,
-        name: updatedMaterial.name,
-        description: updatedMaterial.description,
-        userId: updatedMaterial.userId,
-        courseId: updatedMaterial.courseId,
-        fileUrl: updatedMaterial.fileUrl,
-        date: updatedMaterial.date,
-        start_time: updatedMaterial.start_time,
-        end_time: updatedMaterial.end_time,
-        assignments: updatedMaterial.assignments,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error updating material" });
-  }
-};
-
-const getMaterialById = async (req, res) => {
-  try {
-    const { materialId } = req.params;
-    const material = await prisma.material.findUnique({
-      where: {
-        id: parseInt(materialId),
+        userId: adminId,
       },
       include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            imageUrl: true,
+          },
+        },
         assignments: true,
+        grades: true,
       },
     });
 
-    return res
-      .status(200)
-      .json({ message: "Material fetched successfully", data: material });
+    return res.status(201).json({
+      message: "Material created successfully",
+      data: newMaterial,
+    });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Error fetching material" });
-  }
-};
-
-const deleteMaterial = async (req, res) => {
-  try {
-    const { materialId } = req.params;
-    const material = await prisma.material.findUnique({
-      where: {
-        id: parseInt(materialId),
-      },
+    return res.status(500).json({
+      message: "Error creating material",
+      error: error.message,
     });
-
-    if (!material) {
-      return res.status(404).json({ message: "Material not found" });
-    }
-
-    if (material.fileUrl) {
-      const isDeleted = await removeCloudinary(material.fileUrl);
-      if (!isDeleted) {
-        return res
-          .status(500)
-          .json({ message: "Error deleting file from Cloudinary" });
-      }
-    }
-    await prisma.material.delete({
-      where: {
-        id: parseInt(materialId),
-      },
-    });
-
-    return res
-      .status(200)
-      .json({ message: "Material deleted successfully", data: material });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Error deleting material" });
   }
 };
 
 module.exports = {
+  getMaterials,
   createMaterial,
-  updateMaterial,
-  getMaterialById,
-  deleteMaterial,
 };
