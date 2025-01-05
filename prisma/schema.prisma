@@ -31,21 +31,23 @@ model User {
   messages      Message[]
   forums        Forum[]        @relation("ForumMembers")
   Member        Member[]
+  Assignment    Assignment[]
 }
 
 model Course {
-  id          Int        @id @default(autoincrement())
+  id          Int          @id @default(autoincrement())
   name        String
   description String
-  imageUrl    String?    @default("https://i0.wp.com/game.courses/wp-content/uploads/2020/08/placeholder.png?quality=80&ssl=1")
+  imageUrl    String?      @default("https://i0.wp.com/game.courses/wp-content/uploads/2020/08/placeholder.png?quality=80&ssl=1")
   userId      Int
-  start_time  String     @default("00:00")
-  end_time    String     @default("23:59")
+  start_time  String       @default("00:00")
+  end_time    String       @default("23:59")
   schedules   Schedule[]
   materials   Material[]
   presences   Presence[]
   members     Member[]
-  user        User       @relation(fields: [userId], references: [id])
+  user        User         @relation(fields: [userId], references: [id])
+  Assignment  Assignment[]
 }
 
 model Forum {
@@ -81,17 +83,18 @@ model Schedule {
 }
 
 model Material {
-  id             Int           @id @default(autoincrement())
-  name           String
-  description    String
-  assignments    Assignment[]
-  grades         Grade[]
-  userId         Int
-  fileUrl        String?
-  done           Boolean       @default(false)
-  user           User          @relation(fields: [userId], references: [id])
-  Course         Course?       @relation(fields: [courseId], references: [id])
-  courseId       Int?
+  id          Int          @id @default(autoincrement())
+  name        String
+  description String
+  assignments Assignment[]
+  grades      Grade[]
+  userId      Int
+  fileUrl     String?
+  done        Boolean      @default(false)
+  user        User         @relation(fields: [userId], references: [id])
+  Course      Course?      @relation(fields: [courseId], references: [id])
+  courseId    Int?
+
   Notification   Notification? @relation(fields: [notificationId], references: [id])
   notificationId Int?
 }
@@ -101,18 +104,21 @@ model Assignment {
   title       String    @default("No Title")
   description String    @default("No Description")
   fileUrl     String
-  start_date  DateTime
-  end_date    DateTime
-  grade       Int
+  dueDate     DateTime
   Material    Material? @relation(fields: [materialId], references: [id])
   materialId  Int?
+  courseId    Int
+  course      Course    @relation(fields: [courseId], references: [id])
+  createdBy   Int
+  creator     User      @relation(fields: [createdBy], references: [id])
 }
 
 model Grade {
-  id        Int        @id @default(autoincrement())
-  materials Material[]
-  status    String
-  feedback  String
+  id           Int        @id @default(autoincrement())
+  materials    Material[]
+  status       String
+  feedback     String
+  assignmentId Int?
 }
 
 model Notification {

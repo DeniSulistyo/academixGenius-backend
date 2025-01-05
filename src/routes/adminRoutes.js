@@ -23,6 +23,11 @@ const {
 const {
   createMaterial,
   getMaterials,
+  getMaterialById,
+  updateMaterial,
+  deleteMaterial,
+  createAssigment,
+  createAssignment,
 } = require("../controllers/admins/material");
 
 const router = express.Router();
@@ -126,4 +131,37 @@ router.get(
   roleMiddleware("ADMIN"),
   getMaterials
 );
+
+router.get(
+  "/course/:courseId/material/:materialId",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  getMaterialById
+);
+
+router.put(
+  "/course/:courseId/material/:materialId",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  upload.single("fileUrl"),
+  updateMaterial
+);
+
+router.delete(
+  "/course/:courseId/material/:materialId",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  deleteMaterial
+);
+
+// assigment
+router.post(
+  "/course/:courseId/material/:materialId/assignment",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  upload.single("fileUrl"),
+
+  createAssignment
+);
+
 module.exports = router;
